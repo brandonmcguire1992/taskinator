@@ -55,6 +55,16 @@ var completeEditTask = function (taskName, taskType, taskId) {
   taskSelected.querySelector("h3.task-name").textContent = taskName;
   taskSelected.querySelector("span.task-type").textContent = taskType;
 
+  // loop through tasks array and task object with new content
+  for (var i = 0; i < tasks.length; i++) {
+    if (tasks[i].id === parseInt(taskId)) {
+      tasks[i].name = taskName;
+      tasks[i].type = taskType;
+    }
+  };
+
+  saveTasks();
+
   alert("Your task has been updated.");
 
   formEl.removeAttribute("data-task-id");
@@ -86,6 +96,11 @@ var createTaskEl = function (taskDataObj) {
   taskInfoEl.innerHTML = "<h3 class='task-name'>" + taskDataObj.name + "</h3><span class='task-type'>" + taskDataObj.type + "</span>";
 
   listItemEl.appendChild(taskInfoEl);
+  taskDataObj.id = taskIdCounter;
+
+  tasks.push(taskDataObj);
+
+  saveTasks();
 
   var taskActionsEl = createTaskActions(taskIdCounter);
   listItemEl.appendChild(taskActionsEl);
@@ -201,6 +216,22 @@ var editTask = function (taskId) {
 var deleteTask = function (taskId) {
   var taskSelected = document.querySelector(".task-item[data-task-id='" + taskId + "']");
   taskSelected.remove();
+
+  // create new array to hold updated list of tasks
+  var updatedTaskArr = [];
+
+  // loop through current tasks
+  for (var i = 0; i < tasks.length; i++) {
+    // if tasks[i].id doesn't match the value of taskId, let's keep that task and puysh it into the new array
+    if (tasks[i].id !== parseInt(taskId)) {
+      updatedTaskArr.push(tasks[i]);
+    }
+  }
+
+  // reassign tasks array to be the same as updatedTaskArr
+  tasks = updatedTaskArr;
+
+  saveTasks();
 };
 
 
@@ -224,6 +255,15 @@ var taskStatusChangeHandler = function (event) {
   else if (statusValue === "completed") {
     tasksCompletedEl.appendChild(taskSelected);
   }
+
+  // update task's in tasks array
+  for (var i = 0; i < tasks.length; i++) {
+    if (tasks[i].id === parseInt(taskId)) {
+      tasks[i].status = statusValue;
+    }
+  }
+
+  saveTasks();
 };
 
 // // // // D R A G   A N D   D R O P // // // // 
@@ -234,12 +274,21 @@ var dragTaskHandler = function (event) {
 
   var getId = event.dataTransfer.getData("text/plain"); // Verify that our dataTransfer property stored the data-task-id attribute.
   // console.log("getId:", getId, typeof getId);
+
+  // loop through tasks array to find and update the updated task's status
+  for (var i = 0; i < tasks.length; i++) {
+    if (tasks[i].id === parseInt(id)) {
+      tasks[i].status = statusSelectEl.value.toLowerCase();
+    }
+  }
+
+  console.log(tasks);
 }
 
 // Drag-and-Drop Context
 // Because dataTransfer is a property of the drag event, we can access the data-task-id later in the drop event because both drag and drop are of the type DragEvent. In other words, since each action shares the same event type, we can access properties set during dragging later during dropping.
 
-var dropZoneDragHandler = function (event) {
+var dropZoneDragHandler = function (event) {; 
   var taskListEl = event.target.closest(".task-list");
   if (taskListEl) {
     event.preventDefault();
@@ -269,6 +318,8 @@ var dropTaskHandler = function (event) {
     statusSelectEl.selectedIndex = 2;
   }
 
+  saveTasks();
+
   dropZoneEl.removeAttribute("style"); // Remove shading and outline styles.
   dropZoneEl.appendChild(draggableElement); // Append the draggableElement to its new parent element, dropZoneEl.
 };
@@ -278,6 +329,10 @@ var dragLeaveHandler = function (event) {
   if (taskListEl) {
     taskListEl.removeAttribute("style");
   }
+};
+
+var saveTasks = function() {
+  localStorage.setItem("tasks", JSON.stringify(tasks));
 };
 
 pageContentEl.addEventListener("click", taskButtonHandler);
